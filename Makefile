@@ -5,7 +5,7 @@
 # Variables
 BINARY_NAME=ui-version-check
 BUILD_DIR=bin
-CMD_DIR=cmd/ui-version-check
+CMD_DIR=cmd
 SCRIPTS_DIR=scripts
 
 # Default target

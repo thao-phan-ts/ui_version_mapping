@@ -16,7 +16,7 @@ import (
 const (
 	// Default paths
 	DefaultConfigPath = "evo"
-	DefaultOutputPath = "../../test_results"
+	DefaultOutputPath = "../../out/test_results"
 )
 
 func main() {
@@ -297,7 +297,7 @@ OPTIONS:
     -config <id>        Lender config ID to analyze (default: 9054)
     -lead-source <src>  Lead source type (default: "organic")
     -config-path <path> Path to lender configs directory (default: "evo")
-    -output <path>      Output directory for results (default: "../../test_results")
+    -output <path>      Output directory for results (default: "../../out/test_results")
     -mode <mode>        Analysis mode: complete, ab-testing, journey (default: "complete")
     -remote             Use remote GitHub API instead of local files
     -list-options       List available lead sources and lender config IDs

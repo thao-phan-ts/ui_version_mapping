@@ -16,7 +16,7 @@ const (
 	ProjectDir          = "../"
 
 	// Test results directory structure
-	TestResultsBaseDir   = "test_results"
+	TestResultsBaseDir   = "out/test_results"
 	TestResultsPumlDir   = "pumls"
 	TestResultsImagesDir = "images"
 )
