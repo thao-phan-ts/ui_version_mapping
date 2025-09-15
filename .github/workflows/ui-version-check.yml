@@ -97,6 +97,38 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
     
+    - name: Validate Configuration
+      run: |
+        echo "🔍 Validating Configuration..."
+        echo "============================="
+        
+        # Test if we can access the specific config
+        echo "Testing access to config ${{ github.event.inputs.lender_config_id }} with lead source ${{ github.event.inputs.lead_source }}..."
+        
+        # Try to load the specific config (this will fail fast if there are issues)
+        ./bin/ui-version-check \
+          -config ${{ github.event.inputs.lender_config_id }} \
+          -lead-source ${{ github.event.inputs.lead_source }} \
+          -config-path ${{ github.event.inputs.config_path }} \
+          -mode ab-testing \
+          -remote=${{ github.event.inputs.use_remote }} \
+          -output ./test_output || {
+          echo "❌ Configuration validation failed!"
+          echo "💡 This usually means:"
+          echo "  - The lender config ID doesn't exist"
+          echo "  - The lead source is not valid for this config"
+          echo "  - Repository access issues"
+          echo ""
+          echo "🔧 Try running 'List Configuration Options' first to see available options."
+          exit 1
+        }
+        
+        echo "✅ Configuration validation passed!"
+        rm -rf ./test_output
+      env:
+        GITHUB_TOKEN: ${{ secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+        CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
+    
     - name: Run UI Version Analysis
       run: |
         echo "🚀 Starting UI Version Analysis..."
@@ -108,6 +140,13 @@ jobs:
         echo "Use Remote: ${{ github.event.inputs.use_remote }}"
         echo ""
         
+        # Create output directory
+        mkdir -p ./results
+        echo "📁 Created output directory: ./results"
+        
+        # Run analysis with detailed error handling
+        echo "🔧 Running analysis command..."
+        set +e  # Don't exit on error, we want to capture it
         ./bin/ui-version-check \
           -config ${{ github.event.inputs.lender_config_id }} \
           -lead-source ${{ github.event.inputs.lead_source }} \
@@ -115,6 +154,36 @@ jobs:
           -mode ${{ github.event.inputs.workflow_mode }} \
           -remote=${{ github.event.inputs.use_remote }} \
           -output ./results
+        
+        ANALYSIS_EXIT_CODE=$?
+        set -e  # Re-enable exit on error
+        
+        echo ""
+        echo "📊 Analysis Exit Code: $ANALYSIS_EXIT_CODE"
+        
+        if [ $ANALYSIS_EXIT_CODE -ne 0 ]; then
+          echo "❌ Analysis failed with exit code $ANALYSIS_EXIT_CODE"
+          echo "🔍 Checking what files were created..."
+          ls -la ./results/ || echo "No results directory found"
+          
+          echo ""
+          echo "🛠️ Debugging Information:"
+          echo "- Binary exists: $(test -f ./bin/ui-version-check && echo 'YES' || echo 'NO')"
+          echo "- Binary executable: $(test -x ./bin/ui-version-check && echo 'YES' || echo 'NO')"
+          echo "- Current directory: $(pwd)"
+          echo "- Available disk space: $(df -h . | tail -1)"
+          
+          echo ""
+          echo "💡 Possible solutions:"
+          echo "1. Check if the lender config ID exists in the specified path"
+          echo "2. Verify the lead source is valid for this configuration"
+          echo "3. Ensure the remote repository is accessible"
+          echo "4. Try with a different analysis mode (e.g., 'ab-testing' instead of 'complete')"
+          
+          exit $ANALYSIS_EXIT_CODE
+        else
+          echo "✅ Analysis completed successfully!"
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
@@ -134,12 +203,31 @@ jobs:
       run: |
         echo "📊 Analysis Results Summary"
         echo "=========================="
+        echo "Configuration: ${{ github.event.inputs.lender_config_id }} (${{ github.event.inputs.lead_source }})"
+        echo "Mode: ${{ github.event.inputs.workflow_mode }}"
+        echo "Config Path: ${{ github.event.inputs.config_path }}"
+        echo ""
         
+        # Check if results directory exists
+        if [ -d "results" ]; then
+          echo "📁 Results directory contents:"
+          ls -la results/ || echo "Results directory is empty"
+          echo ""
+        else
+          echo "❌ No results directory found"
+        fi
+        
+        # Check for specific config directory
         if [ -d "results/${{ github.event.inputs.lender_config_id }}" ]; then
           echo "✅ Analysis completed successfully!"
           echo ""
           echo "📁 Generated Files:"
           find results/${{ github.event.inputs.lender_config_id }} -type f | head -20
+          echo ""
+          
+          # Show file sizes
+          echo "📏 File Sizes:"
+          du -h results/${{ github.event.inputs.lender_config_id }}/* 2>/dev/null | head -10 || echo "No files to measure"
           echo ""
           
           # Show summary report if exists
@@ -157,8 +245,23 @@ jobs:
             head -20 "results/${{ github.event.inputs.lender_config_id }}/ab_testing_analysis_${{ github.event.inputs.lender_config_id }}_${{ github.event.inputs.lead_source }}.json"
           fi
         else
-          echo "❌ Analysis failed or no results generated"
-          echo "Check the logs above for error details"
+          echo "❌ Analysis failed or no results generated for config ${{ github.event.inputs.lender_config_id }}"
+          echo ""
+          echo "🔍 Debugging Information:"
+          echo "- Results directory exists: $(test -d results && echo 'YES' || echo 'NO')"
+          echo "- Config directory exists: $(test -d results/${{ github.event.inputs.lender_config_id }} && echo 'YES' || echo 'NO')"
+          echo ""
+          echo "💡 Common causes:"
+          echo "1. Invalid lender config ID - run 'List Configuration Options' to see valid IDs"
+          echo "2. Lead source not found for this config"
+          echo "3. Repository access issues (check authentication)"
+          echo "4. Analysis mode incompatible with this configuration"
+          echo ""
+          echo "🔧 Suggested actions:"
+          echo "1. Verify the config ID exists: run 'List Configuration Options' workflow"
+          echo "2. Check the workflow logs above for specific error messages"
+          echo "3. Try with 'ab-testing' mode instead of 'complete'"
+          echo "4. Ensure TSOCIAL_ACCESS_TOKEN is set if using private repositories"
         fi
         
         echo ""
