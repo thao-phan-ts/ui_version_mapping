@@ -149,7 +149,6 @@ jobs:
           -lead-source ${{ github.event.inputs.lead_source }} \
           -config-path ${{ github.event.inputs.config_path }} \
           -mode ${{ github.event.inputs.workflow_mode }} \
-          -remote=false \
           -output ./results
         
         echo "✅ Analysis completed successfully!"
