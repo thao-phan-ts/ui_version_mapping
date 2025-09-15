@@ -33,12 +33,13 @@ jobs:
         echo "Testing Repository URLs:"
         echo "========================"
         
-        REPOS=(
-          "tsocial/digital_journey"
-          "tsocial/digital-journey"
-          "thao-phan-ts/digital_journey"
-          "thao-phan-ts/digital-journey"
-        )
+                 REPOS=(
+           "tsocial/digital_journey"
+           "tsocial/decision_engine"
+           "tsocial/digital-journey"
+           "thao-phan-ts/digital_journey"
+           "thao-phan-ts/digital-journey"
+         )
         
         for repo in "${REPOS[@]}"; do
           echo "Testing: https://api.github.com/repos/$repo"

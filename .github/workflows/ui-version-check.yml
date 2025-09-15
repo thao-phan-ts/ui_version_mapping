@@ -43,13 +43,22 @@ on:
         description: 'Use Remote GitHub API (instead of local files)'
         required: false
         type: boolean
-        default: true
+        default: false
       
       environment_name:
         description: 'GitHub Environment (where TS_TOKEN is configured)'
         required: false
         type: string
         default: 'production'
+      
+      repository_name:
+        description: 'Repository containing configurations'
+        required: false
+        type: choice
+        options:
+          - tsocial/digital_journey
+          - tsocial/decision_engine
+        default: 'tsocial/digital_journey'
 
 jobs:
   ui-version-check:
@@ -84,6 +93,28 @@ jobs:
     - name: Download dependencies
       run: go mod download
     
+    - name: Setup Submodules
+      run: |
+        echo "🔧 Setting up submodules..."
+        mkdir -p scripts/submodules
+        
+        # Clone digital_journey repository
+        echo "Cloning digital_journey..."
+        git clone https://github.com/tsocial/digital_journey.git scripts/submodules/digital_journey || {
+          echo "Failed to clone digital_journey, trying with token..."
+          git clone https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}@github.com/tsocial/digital_journey.git scripts/submodules/digital_journey
+        }
+        
+        # Clone decision_engine repository  
+        echo "Cloning decision_engine..."
+        git clone https://github.com/tsocial/decision_engine.git scripts/submodules/decision_engine || {
+          echo "Failed to clone decision_engine, trying with token..."
+          git clone https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}@github.com/tsocial/decision_engine.git scripts/submodules/decision_engine
+        }
+        
+        echo "✅ Submodules setup complete"
+        ls -la scripts/submodules/
+    
     - name: Build UI Version Check Tool
       run: |
         make build
@@ -103,6 +134,7 @@ jobs:
         # Test different repository URLs
         for repo_url in \
           "https://api.github.com/repos/tsocial/digital_journey" \
+          "https://api.github.com/repos/tsocial/decision_engine" \
           "https://api.github.com/repos/tsocial/digital-journey" \
           "https://api.github.com/repos/thao-phan-ts/digital_journey"; do
           
@@ -156,7 +188,7 @@ jobs:
         rm -rf ./test_output
       env:
         GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
-        CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
+        CONFIG_REMOTE_URL: https://api.github.com/repos/${{ github.event.inputs.repository_name }}
     
     - name: Run UI Version Analysis
       run: |
@@ -215,7 +247,7 @@ jobs:
         fi
       env:
         GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
-        CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
+        CONFIG_REMOTE_URL: https://api.github.com/repos/${{ github.event.inputs.repository_name }}
     
     - name: Upload Analysis Results
       uses: actions/upload-artifact@v4

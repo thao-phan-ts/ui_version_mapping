@@ -18,12 +18,21 @@ on:
         description: 'Use Remote GitHub API'
         required: false
         type: boolean
-        default: true
+        default: false
+      
+      repository_name:
+        description: 'Repository containing configurations'
+        required: false
+        type: choice
+        options:
+          - tsocial/digital_journey
+          - tsocial/decision_engine
+        default: 'tsocial/digital_journey'
 
 jobs:
   list-options:
     runs-on: ubuntu-latest
-    environment: production  # Change this to match your environment name
+    # environment: production  # Commented out to use repository secrets instead
     
     steps:
     - name: Checkout repository
@@ -46,6 +55,28 @@ jobs:
     
     - name: Download dependencies
       run: go mod download
+    
+    - name: Setup Submodules
+      run: |
+        echo "🔧 Setting up submodules..."
+        mkdir -p scripts/submodules
+        
+        # Clone digital_journey repository
+        echo "Cloning digital_journey..."
+        git clone https://github.com/tsocial/digital_journey.git scripts/submodules/digital_journey || {
+          echo "Failed to clone digital_journey, trying with token..."
+          git clone https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}@github.com/tsocial/digital_journey.git scripts/submodules/digital_journey
+        }
+        
+        # Clone decision_engine repository  
+        echo "Cloning decision_engine..."
+        git clone https://github.com/tsocial/decision_engine.git scripts/submodules/decision_engine || {
+          echo "Failed to clone decision_engine, trying with token..."
+          git clone https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}@github.com/tsocial/decision_engine.git scripts/submodules/decision_engine
+        }
+        
+        echo "✅ Submodules setup complete"
+        ls -la scripts/submodules/
     
     - name: Build UI Version Check Tool
       run: |
@@ -89,7 +120,7 @@ jobs:
         echo "4. Choose your analysis mode and run the workflow" >> options_summary.md
       env:
         GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
-        CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
+        CONFIG_REMOTE_URL: https://api.github.com/repos/${{ github.event.inputs.repository_name }}
     
     - name: Upload Options Summary
       uses: actions/upload-artifact@v4
