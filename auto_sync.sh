@@ -12,6 +12,8 @@ readonly GITHUB_ORG="tsocial"
 # Repository configurations - parallel arrays
 REPOS=("digital_journey" "decision_engine")
 CHECKOUT_DIRS=("migration" "etc/production migration")
+# Default versions (branch/tag/commit) - can be overridden via environment variables
+REPO_VERSIONS=("master" "master")
 
 
 
@@ -57,6 +59,20 @@ ensure_directory() {
     fi
 }
 
+# Get version for a repository (from environment variable or default)
+get_repo_version() {
+    local repo_name="$1"
+    local default_version="$2"
+    
+    # Convert repo name to uppercase and replace hyphens with underscores for env var
+    local env_var_name=$(echo "$repo_name" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+    env_var_name="${env_var_name}_VERSION"
+    
+    # Get version from environment variable or use default
+    local version=$(eval echo "\${$env_var_name:-$default_version}")
+    echo "$version"
+}
+
 # ============================================================================
 # Core Functions
 # ============================================================================
@@ -65,11 +81,13 @@ ensure_directory() {
 sparse_checkout_repo() {
     local repo_name="$1"
     local checkout_dirs="$2"
-    local target_dir="${3:-$repo_name}"
+    local version="$3"
+    local target_dir="${4:-$repo_name}"
     
     print_separator
     log_info "Setting up sparse checkout for: $repo_name"
     log_info "Directories to checkout: $checkout_dirs"
+    log_info "Version/Branch: $version"
     
     # Clean up existing directory
     if [ -d "$target_dir" ]; then
@@ -82,7 +100,6 @@ sparse_checkout_repo() {
     git clone \
         --filter=blob:none \
         --no-checkout \
-        --depth 1 \
         --sparse \
         "git@github.com:${GITHUB_ORG}/${repo_name}.git" \
         "$target_dir"
@@ -98,12 +115,24 @@ sparse_checkout_repo() {
         git sparse-checkout add "$dir"
     done
     
-    # Checkout and pull latest
-    git checkout
-    git pull origin master
+    # Fetch all refs if checking out a specific version
+    if [ "$version" != "master" ] && [ "$version" != "main" ]; then
+        log_info "Fetching all refs for version checkout..."
+        git fetch --all --tags
+    fi
+    
+    # Checkout specified version
+    log_info "Checking out version: $version"
+    git checkout "$version" || {
+        log_error "Failed to checkout $version, trying as remote branch..."
+        git checkout -b "$version" "origin/$version" || {
+            log_error "Failed to checkout version: $version"
+            exit 1
+        }
+    }
     
     cd ..
-    log_info "✓ Successfully set up $repo_name"
+    log_info "✓ Successfully set up $repo_name at version $version"
 }
 
 # Initialize all repositories with sparse checkout
@@ -115,7 +144,12 @@ init_repositories() {
     
     local num_repos=${#REPOS[@]}
     for ((i=0; i<num_repos; i++)); do
-        sparse_checkout_repo "${REPOS[$i]}" "${CHECKOUT_DIRS[$i]}"
+        local repo="${REPOS[$i]}"
+        local dirs="${CHECKOUT_DIRS[$i]}"
+        local default_version="${REPO_VERSIONS[$i]}"
+        local version=$(get_repo_version "$repo" "$default_version")
+        
+        sparse_checkout_repo "$repo" "$dirs" "$version"
     done
     
     cd "$SCRIPT_DIR"
@@ -142,11 +176,38 @@ update_repositories() {
             log_info "Updating: $dir_name"
             cd "$dir"
             
-            # Check for uncommitted changes
-            if ! git diff-index --quiet HEAD -- 2>/dev/null; then
-                log_warn "Uncommitted changes detected in $dir_name, skipping update"
+            # Find the repo index to get its version
+            local repo_index=-1
+            for ((i=0; i<${#REPOS[@]}; i++)); do
+                if [ "${REPOS[$i]}" = "$dir_name" ]; then
+                    repo_index=$i
+                    break
+                fi
+            done
+            
+            if [ $repo_index -ne -1 ]; then
+                local default_version="${REPO_VERSIONS[$repo_index]}"
+                local version=$(get_repo_version "$dir_name" "$default_version")
+                
+                # Check for uncommitted changes
+                if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+                    log_warn "Uncommitted changes detected in $dir_name, skipping update"
+                else
+                    # Get current branch/tag
+                    local current_ref=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+                    
+                    if [ "$current_ref" != "$version" ]; then
+                        log_warn "Switching from $current_ref to $version"
+                        git fetch --all --tags
+                        git checkout "$version" || log_error "Failed to checkout $version"
+                    else
+                        log_info "Already on $version, pulling latest changes..."
+                        git pull origin "$version" || log_info "No remote tracking branch, skipping pull"
+                    fi
+                fi
             else
-                git pull origin master || log_error "Failed to update $dir_name"
+                log_warn "$dir_name not found in repository list, skipping version check"
+                git pull || log_info "Pull failed, repository might be on a detached HEAD"
             fi
             
             cd "$SCRIPT_DIR"
@@ -171,14 +232,32 @@ OPTIONS:
     (no args)   Update existing repositories
     -h, --help  Show this help message
 
-REPOSITORIES:
+REPOSITORIES & VERSIONS:
 EOF
     local num_repos=${#REPOS[@]}
     for ((i=0; i<num_repos; i++)); do
-        echo "    - ${REPOS[$i]}: ${CHECKOUT_DIRS[$i]}"
+        local repo="${REPOS[$i]}"
+        local default_version="${REPO_VERSIONS[$i]}"
+        local version=$(get_repo_version "$repo" "$default_version")
+        echo "    - $repo: ${CHECKOUT_DIRS[$i]}"
+        echo "        Version: $version (default: $default_version)"
     done
     
     cat << EOF
+
+VERSION CONTROL:
+    You can override the version for each repository using environment variables:
+    - DIGITAL_JOURNEY_VERSION: Version for digital_journey (default: master)
+    - DECISION_ENGINE_VERSION: Version for decision_engine (default: master)
+    
+    Examples:
+        DIGITAL_JOURNEY_VERSION=v1.2.3 $0 1    # Init with specific tag
+        DECISION_ENGINE_VERSION=develop $0     # Update with specific branch
+        
+    Versions can be:
+    - Branch names (master, develop, feature/xyz)
+    - Tags (v1.2.3, release-2024)
+    - Commit hashes (abc123def)
 
 CONFIGURATION:
     Root Directory: $ROOT_DIR
