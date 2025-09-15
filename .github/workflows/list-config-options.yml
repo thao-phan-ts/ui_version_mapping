@@ -61,7 +61,7 @@ jobs:
         
         ./bin/ui-version-check -list-options -config-path ${{ github.event.inputs.config_path }} -remote=${{ github.event.inputs.use_remote }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
     
     - name: Generate Options Summary
@@ -87,7 +87,7 @@ jobs:
         echo "3. Select your desired Lead Source and enter a Lender Config ID from the list above" >> options_summary.md
         echo "4. Choose your analysis mode and run the workflow" >> options_summary.md
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
     
     - name: Upload Options Summary

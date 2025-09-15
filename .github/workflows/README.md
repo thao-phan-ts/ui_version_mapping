@@ -85,10 +85,30 @@ This directory contains GitHub Action workflows that allow you to run the UI Ver
 
 ### Environment Variables
 
-The workflows use these environment variables (automatically configured):
+The workflows use these environment variables:
 
 - `GITHUB_TOKEN`: Automatically provided by GitHub Actions for API access
+- `TSOCIAL_ACCESS_TOKEN`: (Optional) Personal access token with access to tsocial organization
 - `CONFIG_REMOTE_URL`: Set to `https://api.github.com/repos/tsocial/digital_journey`
+
+### Setting Up Access to Private Repositories
+
+If the `tsocial/digital_journey` repository is private, you'll need to add a personal access token:
+
+1. **Create a Personal Access Token**:
+   - Go to GitHub Settings → Developer settings → Personal access tokens
+   - Generate a new token with `repo` scope
+   - Make sure the token has access to the `tsocial` organization
+
+2. **Add the Token as a Repository Secret**:
+   - Go to your repository Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `TSOCIAL_ACCESS_TOKEN`
+   - Value: Your personal access token
+
+3. **Alternative: Use a Public Repository**:
+   - Fork `tsocial/digital_journey` to your personal account
+   - Update `CONFIG_REMOTE_URL` in the workflows to point to your fork
 
 ### Permissions
 
@@ -130,22 +150,28 @@ results/
 
 ### Common Issues
 
-1. **"Config ID not found"**:
+1. **"GitHub API returned status 404"**:
+   - The `tsocial/digital_journey` repository is private or doesn't exist
+   - Add a `TSOCIAL_ACCESS_TOKEN` secret (see setup instructions above)
+   - Or fork the repository to your account and update `CONFIG_REMOTE_URL`
+   - Verify the repository path is correct
+
+2. **"Config ID not found"**:
    - Run "List Configuration Options" first to see available IDs
    - Make sure you're using the correct config path
    - Verify the config ID exists in the selected path
 
-2. **"No lead sources found"**:
+3. **"No lead sources found"**:
    - The configuration might not have lead source tags
    - Try a different config path
    - Check if you're using the right remote repository
 
-3. **"Analysis failed"**:
+4. **"Analysis failed"**:
    - Check the workflow logs for detailed error messages
    - Verify your inputs are correct
    - Try with a simpler analysis mode (e.g., "ab-testing" instead of "complete")
 
-4. **"Remote API timeout"**:
+5. **"Remote API timeout"**:
    - The GitHub API might be slow or rate-limited
    - Try again later
    - Consider using a different config path with fewer files
