@@ -86,7 +86,7 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('go.sum', 'go.mod') }}
         restore-keys: |
           ${{ runner.os }}-go-
     
@@ -98,22 +98,33 @@ jobs:
         echo "🔧 Setting up submodules..."
         mkdir -p scripts/submodules
         
+        # Configure git to use token authentication
+        if [ -n "${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN }}" ]; then
+          echo "Configuring git with authentication token..."
+          git config --global url."https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
+        fi
+        
         # Clone digital_journey repository
         echo "Cloning digital_journey..."
         git clone https://github.com/tsocial/digital_journey.git scripts/submodules/digital_journey || {
-          echo "Failed to clone digital_journey, trying with token..."
-          git clone https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}@github.com/tsocial/digital_journey.git scripts/submodules/digital_journey
+          echo "❌ Failed to clone digital_journey - repository may be private or not accessible"
+          echo "Continuing without digital_journey..."
         }
         
         # Clone decision_engine repository  
         echo "Cloning decision_engine..."
         git clone https://github.com/tsocial/decision_engine.git scripts/submodules/decision_engine || {
-          echo "Failed to clone decision_engine, trying with token..."
-          git clone https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}@github.com/tsocial/decision_engine.git scripts/submodules/decision_engine
+          echo "❌ Failed to clone decision_engine - repository may be private or not accessible"
+          echo "Continuing without decision_engine..."
         }
         
-        echo "✅ Submodules setup complete"
-        ls -la scripts/submodules/
+        echo "📁 Submodules directory contents:"
+        ls -la scripts/submodules/ || echo "No submodules directory created"
+        
+        # Reset git config to avoid affecting other operations
+        if [ -n "${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN }}" ]; then
+          git config --global --unset url."https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN }}@github.com/".insteadOf || true
+        fi
     
     - name: Build UI Version Check Tool
       run: |
@@ -251,7 +262,7 @@ jobs:
     
     - name: Upload Analysis Results
       uses: actions/upload-artifact@v4
-      if: always()
+      if: always() && hashFiles('results/**/*') != ''
       with:
         name: ui-version-analysis-results-${{ github.event.inputs.lender_config_id }}-${{ github.event.inputs.lead_source }}
         path: |
