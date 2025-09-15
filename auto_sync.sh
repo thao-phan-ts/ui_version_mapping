@@ -11,8 +11,8 @@ readonly DE_BASE_DIR="de_base"
 readonly GITHUB_ORG="tsocial"
 
 # Repository configurations - parallel arrays
-REPOS=("digital_journey" "decision_engine" "platform_integration")
-CHECKOUT_DIRS=("migration" "etc/production migration" "etc piconfig")
+REPOS=("digital_journey" "decision_engine")
+CHECKOUT_DIRS=("migration" "etc/production migration")
 
 # Decision Engine base configuration
 readonly DE_REPO="decision_engine"
