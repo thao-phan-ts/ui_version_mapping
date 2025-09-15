@@ -72,6 +72,8 @@ jobs:
       run: go mod download
     
     - name: Setup Repository Dependencies
+      env:
+        GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
         echo "🔄 Setting up repository dependencies..."
         
@@ -82,19 +84,19 @@ jobs:
           # Make script executable
           chmod +x auto_sync.sh
           
-          # Setup SSH for GitHub access (using HTTPS with token instead)
-          if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
-            git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "git@github.com:"
-            git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
-            echo "✅ Configured GitHub access"
-          fi
-          
           # Set versions from environment or use defaults
           export DIGITAL_JOURNEY_VERSION="${{ github.event.inputs.digital_journey_version || 'master' }}"
           export DECISION_ENGINE_VERSION="${{ github.event.inputs.decision_engine_version || 'master' }}"
           
           echo "  • Digital Journey Version: $DIGITAL_JOURNEY_VERSION"
           echo "  • Decision Engine Version: $DECISION_ENGINE_VERSION"
+          
+          # Show token status (masked)
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            echo "  • GitHub Token: Available (${#GITHUB_TOKEN} chars)"
+          else
+            echo "  • GitHub Token: Not available"
+          fi
           
           # Run auto_sync.sh with initialization
           ./auto_sync.sh 1 || {

@@ -95,13 +95,29 @@ sparse_checkout_repo() {
         rm -rf "$target_dir"
     fi
     
+    # Determine repository URL based on environment
+    local repo_url
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        # Use HTTPS with token for GitHub Actions
+        repo_url="https://${GITHUB_TOKEN}@github.com/${GITHUB_ORG}/${repo_name}.git"
+        log_info "Using HTTPS authentication with token"
+    elif [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+        # In CI but no token, try HTTPS without auth (for public repos)
+        repo_url="https://github.com/${GITHUB_ORG}/${repo_name}.git"
+        log_info "Using HTTPS (CI environment detected)"
+    else
+        # Local development, use SSH
+        repo_url="git@github.com:${GITHUB_ORG}/${repo_name}.git"
+        log_info "Using SSH authentication"
+    fi
+    
     # Clone with sparse checkout
     log_info "Cloning repository..."
     git clone \
         --filter=blob:none \
         --no-checkout \
         --sparse \
-        "git@github.com:${GITHUB_ORG}/${repo_name}.git" \
+        "$repo_url" \
         "$target_dir"
     
     cd "$target_dir"
