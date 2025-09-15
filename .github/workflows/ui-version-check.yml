@@ -4,14 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       lead_source:
-        description: 'Lead Source'
+        description: 'Lead Source (e.g., organic, evo_native, mwg_pos, seller_general)'
         required: true
-        type: choice
-        options:
-          - organic
-          - evo_native
-          - mwg_pos
-          - seller_general
+        type: string
         default: 'organic'
       
       config_path:
@@ -40,6 +35,18 @@ on:
           - ab-testing
           - journey
         default: 'complete'
+      
+      digital_journey_version:
+        description: 'Digital Journey Version (branch/tag/commit)'
+        required: false
+        type: string
+        default: 'master'
+      
+      decision_engine_version:
+        description: 'Decision Engine Version (branch/tag/commit)'
+        required: false
+        type: string
+        default: 'master'
 
 jobs:
   ui-version-check:
@@ -63,6 +70,54 @@ jobs:
     
     - name: Download dependencies
       run: go mod download
+    
+    - name: Setup Repository Dependencies
+      run: |
+        echo "🔄 Setting up repository dependencies..."
+        
+        # Check if auto_sync.sh exists
+        if [ -f "auto_sync.sh" ]; then
+          echo "📦 Preparing to run auto_sync.sh..."
+          
+          # Make script executable
+          chmod +x auto_sync.sh
+          
+          # Setup SSH for GitHub access (using HTTPS with token instead)
+          if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
+            git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "git@github.com:"
+            git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+            echo "✅ Configured GitHub access"
+          fi
+          
+          # Set versions from environment or use defaults
+          export DIGITAL_JOURNEY_VERSION="${{ github.event.inputs.digital_journey_version || 'master' }}"
+          export DECISION_ENGINE_VERSION="${{ github.event.inputs.decision_engine_version || 'master' }}"
+          
+          echo "  • Digital Journey Version: $DIGITAL_JOURNEY_VERSION"
+          echo "  • Decision Engine Version: $DECISION_ENGINE_VERSION"
+          
+          # Run auto_sync.sh with initialization
+          ./auto_sync.sh 1 || {
+            echo "⚠️ auto_sync.sh failed, continuing with fallback configs..."
+          }
+          
+          # Check if configs were fetched
+          if [ -d "submodules/digital_journey/migration" ]; then
+            echo "✅ Repository configs fetched successfully"
+            
+            # Copy configs to vendor directory for consistency
+            echo "📋 Copying configs to vendor directory..."
+            mkdir -p vendor/configs
+            if [ -d "submodules/digital_journey/migration/sync/vietnam/tpbank/lender_configs" ]; then
+              cp -r submodules/digital_journey/migration/sync/vietnam/tpbank/lender_configs/* vendor/configs/ 2>/dev/null || true
+              echo "✅ Configs copied to vendor directory"
+            fi
+          else
+            echo "⚠️ No configs fetched from repositories"
+          fi
+        else
+          echo "⚠️ auto_sync.sh not found, skipping repository setup"
+        fi
     
     - name: Setup Sample Configuration Data
       run: |
@@ -232,6 +287,8 @@ jobs:
         echo "| **Lead Source** | \`${{ github.event.inputs.lead_source }}\` |" >> $GITHUB_STEP_SUMMARY
         echo "| **Config Path** | \`${{ github.event.inputs.config_path }}\` |" >> $GITHUB_STEP_SUMMARY
         echo "| **Analysis Mode** | \`${{ github.event.inputs.workflow_mode }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Digital Journey Version** | \`${{ github.event.inputs.digital_journey_version || 'master' }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Decision Engine Version** | \`${{ github.event.inputs.decision_engine_version || 'master' }}\` |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # Add analysis output
