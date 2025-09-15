@@ -97,10 +97,14 @@ sparse_checkout_repo() {
     
     # Determine repository URL based on environment
     local repo_url
-    if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-        # Use HTTPS in CI environment (auth is configured globally)
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        # Directly use authenticated URL in CI with token
+        repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_ORG}/${repo_name}.git"
+        log_info "Using authenticated HTTPS URL"
+    elif [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+        # CI without token, try public access
         repo_url="https://github.com/${GITHUB_ORG}/${repo_name}.git"
-        log_info "Using HTTPS URL (CI environment)"
+        log_info "Using public HTTPS URL (CI environment)"
     else
         # Local development, use SSH
         repo_url="git@github.com:${GITHUB_ORG}/${repo_name}.git"
@@ -112,13 +116,18 @@ sparse_checkout_repo() {
     
     # Disable terminal prompts for git
     export GIT_TERMINAL_PROMPT=0
+    export GIT_ASKPASS=/bin/echo
     
+    # Clone and suppress token in output
     git clone \
         --filter=blob:none \
         --no-checkout \
         --sparse \
         "$repo_url" \
-        "$target_dir" 2>&1 | grep -v "x-access-token" || true
+        "$target_dir" 2>&1 | sed 's/x-access-token:[^@]*@/x-access-token:***@/g' || {
+        log_error "Failed to clone ${repo_name}"
+        return 1
+    }
     
     cd "$target_dir"
     
@@ -290,12 +299,22 @@ EOF
 setup_git_auth() {
     if [ -n "${GITHUB_TOKEN:-}" ]; then
         log_info "Configuring git authentication for CI environment"
+        
+        # Method 1: URL rewriting (primary)
         git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
         git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:"
         git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
         
+        # Method 2: Credential helper as backup
+        git config --global credential.helper store
+        echo "https://x-access-token:${GITHUB_TOKEN}@github.com" > ~/.git-credentials
+        
+        # Method 3: Set authorization header
+        git config --global http.https://github.com/.extraheader "Authorization: token ${GITHUB_TOKEN}"
+        
         # Disable terminal prompts
         export GIT_TERMINAL_PROMPT=0
+        export GIT_ASKPASS=/bin/echo
         
         log_info "Git authentication configured successfully"
     fi
