@@ -119,6 +119,7 @@ jobs:
         chmod +x bin/ui-version-check
     
     - name: Run UI Version Analysis
+      id: analysis
       run: |
         echo "🚀 Starting UI Version Analysis..."
         echo "=================================="
@@ -132,15 +133,17 @@ jobs:
         mkdir -p ./results
         echo "📁 Created output directory: ./results"
         
-        # Run analysis
+        # Run analysis and capture output
         echo "🔧 Running analysis command..."
+        echo "=================================="
         ./bin/ui-version-check \
           -config ${{ github.event.inputs.lender_config_id }} \
           -lead-source ${{ github.event.inputs.lead_source }} \
           -config-path ${{ github.event.inputs.config_path }} \
           -mode ${{ github.event.inputs.workflow_mode }} \
-          -output ./results
+          -output ./results | tee analysis_output.txt
         
+        echo ""
         echo "✅ Analysis completed successfully!"
     
     - name: Upload Analysis Results
@@ -163,14 +166,103 @@ jobs:
         echo "Config Path: ${{ github.event.inputs.config_path }}"
         echo ""
         
+        # Display the analysis output
+        if [ -f "analysis_output.txt" ]; then
+          echo "📋 Analysis Output:"
+          echo "-------------------"
+          cat analysis_output.txt
+          echo ""
+        fi
+        
+        # Check for generated files
         if [ -d "results/${{ github.event.inputs.lender_config_id }}" ]; then
-          echo "✅ Analysis completed successfully!"
+          echo "✅ Analysis completed with generated files!"
           echo ""
           echo "📁 Generated Files:"
           find results/${{ github.event.inputs.lender_config_id }} -type f | head -20
           echo ""
+          
+          # Display summary report if it exists
+          SUMMARY_FILE="results/${{ github.event.inputs.lender_config_id }}/summary_report_${{ github.event.inputs.lender_config_id }}_${{ github.event.inputs.lead_source }}.md"
+          if [ -f "$SUMMARY_FILE" ]; then
+            echo "📄 Summary Report:"
+            echo "=================="
+            cat "$SUMMARY_FILE"
+            echo ""
+          fi
+          
+          # Display JSON results preview for different modes
+          if [ "${{ github.event.inputs.workflow_mode }}" = "ab-testing" ] || [ "${{ github.event.inputs.workflow_mode }}" = "complete" ]; then
+            AB_FILE="results/${{ github.event.inputs.lender_config_id }}/ab_testing_analysis_${{ github.event.inputs.lender_config_id }}_${{ github.event.inputs.lead_source }}.json"
+            if [ -f "$AB_FILE" ]; then
+              echo "🔬 A/B Testing Results Preview:"
+              echo "--------------------------------"
+              head -n 50 "$AB_FILE" | jq '.' 2>/dev/null || head -n 50 "$AB_FILE"
+              echo ""
+            fi
+          fi
+          
+          if [ "${{ github.event.inputs.workflow_mode }}" = "journey" ] || [ "${{ github.event.inputs.workflow_mode }}" = "complete" ]; then
+            JOURNEY_FILE="results/${{ github.event.inputs.lender_config_id }}/journey_analysis_${{ github.event.inputs.lender_config_id }}_${{ github.event.inputs.lead_source }}.json"
+            if [ -f "$JOURNEY_FILE" ]; then
+              echo "🗺️ Journey Analysis Results Preview:"
+              echo "-------------------------------------"
+              head -n 50 "$JOURNEY_FILE" | jq '.' 2>/dev/null || head -n 50 "$JOURNEY_FILE"
+              echo ""
+            fi
+          fi
+          
           echo "💾 Download the 'ui-version-analysis-results-${{ github.event.inputs.lender_config_id }}-${{ github.event.inputs.lead_source }}' artifact to get all generated files"
         else
-          echo "❌ Analysis failed or no results generated for config ${{ github.event.inputs.lender_config_id }}"
-          echo "Check the logs above for error details"
+          echo "⚠️ No additional files were generated in results directory"
+          echo "The analysis output above shows what was discovered"
         fi
+    
+    - name: Create Job Summary
+      if: always()
+      run: |
+        # Create GitHub Job Summary (displayed prominently in the Actions UI)
+        echo "# 📊 UI Version Analysis Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📋 Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| **Lender Config ID** | \`${{ github.event.inputs.lender_config_id }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Lead Source** | \`${{ github.event.inputs.lead_source }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Config Path** | \`${{ github.event.inputs.config_path }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Analysis Mode** | \`${{ github.event.inputs.workflow_mode }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Add analysis output
+        if [ -f "analysis_output.txt" ]; then
+          echo "## 🔍 Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat analysis_output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Add summary report if exists
+        SUMMARY_FILE="results/${{ github.event.inputs.lender_config_id }}/summary_report_${{ github.event.inputs.lender_config_id }}_${{ github.event.inputs.lead_source }}.md"
+        if [ -f "$SUMMARY_FILE" ]; then
+          echo "## 📄 Detailed Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Add file list
+        if [ -d "results/${{ github.event.inputs.lender_config_id }}" ]; then
+          echo "## 📁 Generated Files" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The following files were generated:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find results/${{ github.event.inputs.lender_config_id }} -type f -exec basename {} \; | sort | uniq >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📥 **Download the artifact** \`ui-version-analysis-results-${{ github.event.inputs.lender_config_id }}-${{ github.event.inputs.lead_source }}\` to get all files" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "---" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Analysis completed at:** $(date)" >> $GITHUB_STEP_SUMMARY
