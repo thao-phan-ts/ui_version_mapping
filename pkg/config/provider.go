@@ -302,11 +302,16 @@ func GetConfigProvider() ConfigProvider {
 		return NewRemoteConfigProvider(remoteURL, token)
 	}
 
+	// Check if vendor configs exist (preferred)
+	if _, err := os.Stat("vendor/configs"); err == nil {
+		return NewLocalConfigProvider("vendor/configs")
+	}
+
 	// Check if submodules exist
 	if _, err := os.Stat("scripts/submodules/digital_journey"); err == nil {
 		return NewLocalConfigProvider("scripts/submodules/digital_journey/migration/sync/vietnam/tpbank/lender_configs")
 	}
 
-	// Default to current structure
-	return NewLocalConfigProvider("scripts/submodules/digital_journey/migration/sync/vietnam/tpbank/lender_configs")
+	// Default to vendor structure
+	return NewLocalConfigProvider("vendor/configs")
 }

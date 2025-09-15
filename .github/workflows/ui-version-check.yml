@@ -93,38 +93,55 @@ jobs:
     - name: Download dependencies
       run: go mod download
     
-    - name: Setup Submodules
+    - name: Setup Sample Configuration Data
       run: |
-        echo "🔧 Setting up submodules..."
-        mkdir -p scripts/submodules
+        echo "🔧 Setting up sample configuration data..."
+        mkdir -p vendor/configs/evo
         
-        # Configure git to use token authentication
-        if [ -n "${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN }}" ]; then
-          echo "Configuring git with authentication token..."
-          git config --global url."https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
-        fi
-        
-        # Clone digital_journey repository
-        echo "Cloning digital_journey..."
-        git clone https://github.com/tsocial/digital_journey.git scripts/submodules/digital_journey || {
-          echo "❌ Failed to clone digital_journey - repository may be private or not accessible"
-          echo "Continuing without digital_journey..."
+        # Create sample configuration files for testing
+        cat > vendor/configs/evo/9054_organic.json << 'EOF'
+        {
+          "id": 9054,
+          "name": "v1.0.collect.organic",
+          "tags": [
+            {"name": "lead_source", "value": "organic"},
+            {"name": "flow_type", "value": "collect"}
+          ],
+          "ui_version": "v9.1.5.0",
+          "ui_flow": [
+            "otp",
+            "app_form.basic_info",
+            "ekyc.selfie.active",
+            "inform.success",
+            "esign.review"
+          ],
+          "ui_flow_settings": {},
+          "weight": 100
         }
+        EOF
         
-        # Clone decision_engine repository  
-        echo "Cloning decision_engine..."
-        git clone https://github.com/tsocial/decision_engine.git scripts/submodules/decision_engine || {
-          echo "❌ Failed to clone decision_engine - repository may be private or not accessible"
-          echo "Continuing without decision_engine..."
+        cat > vendor/configs/evo/9012_organic.json << 'EOF'
+        {
+          "id": 9012,
+          "name": "v1.0.diff_nation_id",
+          "tags": [
+            {"name": "lead_source", "value": "organic"},
+            {"name": "flow_type", "value": "diff_nation_id"}
+          ],
+          "ui_version": "v9.1.4.0",
+          "ui_flow": [
+            "otp",
+            "app_form.basic_info",
+            "ekyc.selfie.active"
+          ],
+          "ui_flow_settings": {},
+          "weight": 50
         }
+        EOF
         
-        echo "📁 Submodules directory contents:"
-        ls -la scripts/submodules/ || echo "No submodules directory created"
-        
-        # Reset git config to avoid affecting other operations
-        if [ -n "${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN }}" ]; then
-          git config --global --unset url."https://${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN }}@github.com/".insteadOf || true
-        fi
+        echo "✅ Sample configuration created"
+        echo "📁 Vendor configs:"
+        find vendor/configs -name "*.json" | head -10
     
     - name: Build UI Version Check Tool
       run: |
@@ -183,7 +200,7 @@ jobs:
           -lead-source ${{ github.event.inputs.lead_source }} \
           -config-path ${{ github.event.inputs.config_path }} \
           -mode ab-testing \
-          -remote=${{ github.event.inputs.use_remote }} \
+          -remote=false \
           -output ./test_output || {
           echo "❌ Configuration validation failed!"
           echo "💡 This usually means:"
@@ -224,7 +241,7 @@ jobs:
           -lead-source ${{ github.event.inputs.lead_source }} \
           -config-path ${{ github.event.inputs.config_path }} \
           -mode ${{ github.event.inputs.workflow_mode }} \
-          -remote=${{ github.event.inputs.use_remote }} \
+          -remote=false \
           -output ./results
         
         ANALYSIS_EXIT_CODE=$?

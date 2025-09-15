@@ -1,0 +1,18 @@
+{
+  "id": 9013,
+  "name": "v1.0.diff_phone",
+  "tags": [
+    {"name": "lead_source", "value": "organic"},
+    {"name": "lead_source", "value": "evo"},
+    {"name": "flow_type", "value": "diff_phone"}
+  ],
+  "ui_version": "v9.1.4.0",
+  "ui_flow": [
+    "otp",
+    "app_form.basic_info",
+    "ekyc.selfie.active",
+    "inform.success"
+  ],
+  "ui_flow_settings": {},
+  "weight": 75
+} 
