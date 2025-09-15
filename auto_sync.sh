@@ -97,28 +97,28 @@ sparse_checkout_repo() {
     
     # Determine repository URL based on environment
     local repo_url
-    if [ -n "${GITHUB_TOKEN:-}" ]; then
-        # Use HTTPS with token for GitHub Actions
-        repo_url="https://${GITHUB_TOKEN}@github.com/${GITHUB_ORG}/${repo_name}.git"
-        log_info "Using HTTPS authentication with token"
-    elif [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-        # In CI but no token, try HTTPS without auth (for public repos)
+    if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+        # Use HTTPS in CI environment (auth is configured globally)
         repo_url="https://github.com/${GITHUB_ORG}/${repo_name}.git"
-        log_info "Using HTTPS (CI environment detected)"
+        log_info "Using HTTPS URL (CI environment)"
     else
         # Local development, use SSH
         repo_url="git@github.com:${GITHUB_ORG}/${repo_name}.git"
-        log_info "Using SSH authentication"
+        log_info "Using SSH URL (local environment)"
     fi
     
     # Clone with sparse checkout
-    log_info "Cloning repository..."
+    log_info "Cloning repository: ${repo_name}"
+    
+    # Disable terminal prompts for git
+    export GIT_TERMINAL_PROMPT=0
+    
     git clone \
         --filter=blob:none \
         --no-checkout \
         --sparse \
         "$repo_url" \
-        "$target_dir"
+        "$target_dir" 2>&1 | grep -v "x-access-token" || true
     
     cd "$target_dir"
     
@@ -286,7 +286,25 @@ EOF
 # Main Execution
 # ============================================================================
 
+# Setup git authentication if in CI environment
+setup_git_auth() {
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        log_info "Configuring git authentication for CI environment"
+        git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+        git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:"
+        git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
+        
+        # Disable terminal prompts
+        export GIT_TERMINAL_PROMPT=0
+        
+        log_info "Git authentication configured successfully"
+    fi
+}
+
 main() {
+    # Setup authentication first if needed
+    setup_git_auth
+    
     case "${1:-}" in
         1)
             init_repositories
