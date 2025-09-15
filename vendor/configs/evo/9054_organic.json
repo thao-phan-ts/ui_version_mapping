@@ -1,0 +1,18 @@
+{
+  "id": 9054,
+  "name": "v1.0.collect.organic",
+  "tags": [
+    {"name": "lead_source", "value": "organic"},
+    {"name": "flow_type", "value": "collect"}
+  ],
+  "ui_version": "v9.1.5.0",
+  "ui_flow": [
+    "otp",
+    "app_form.basic_info",
+    "ekyc.selfie.active",
+    "inform.success",
+    "esign.review"
+  ],
+  "ui_flow_settings": {},
+  "weight": 100
+}

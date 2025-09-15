@@ -21,28 +21,18 @@ const (
 
 func main() {
 	var (
-		configID    = flag.Int("config", 9054, "Lender config ID to analyze")
-		leadSource  = flag.String("lead-source", "organic", "Lead source (organic, paid, etc.)")
-		configPath  = flag.String("config-path", DefaultConfigPath, "Path to lender configs directory")
-		outputPath  = flag.String("output", DefaultOutputPath, "Output directory for results")
-		mode        = flag.String("mode", "complete", "Analysis mode: complete, ab-testing, journey")
-		remote      = flag.Bool("remote", false, "Use remote GitHub API instead of local files")
-		help        = flag.Bool("help", false, "Show help message")
-		listOptions = flag.Bool("list-options", false, "List available lead sources and lender config IDs")
+		configID   = flag.Int("config", 9054, "Lender config ID to analyze")
+		leadSource = flag.String("lead-source", "organic", "Lead source (organic, paid, etc.)")
+		configPath = flag.String("config-path", DefaultConfigPath, "Path to lender configs directory")
+		outputPath = flag.String("output", DefaultOutputPath, "Output directory for results")
+		mode       = flag.String("mode", "complete", "Analysis mode: complete, ab-testing, journey")
+		help       = flag.Bool("help", false, "Show help message")
 	)
 
 	flag.Parse()
 
 	if *help {
 		showHelp()
-		return
-	}
-
-	if *listOptions {
-		err := listAvailableOptions(*configPath, *remote)
-		if err != nil {
-			log.Fatalf("Failed to list options: %v", err)
-		}
 		return
 	}
 
@@ -66,25 +56,11 @@ func main() {
 	fmt.Printf("Lead Source: %s\n", *leadSource)
 	fmt.Printf("Config Path: %s\n", *configPath)
 	fmt.Printf("Output Path: %s\n", *outputPath)
-	fmt.Printf("Mode: %s\n", *mode)
-	fmt.Printf("Remote: %t\n\n", *remote)
+	fmt.Printf("Mode: %s\n\n", *mode)
 
-	// Create config provider
-	var provider config.ConfigProvider
-	if *remote {
-		// Use remote GitHub API
-		baseURL := os.Getenv("CONFIG_REMOTE_URL")
-		if baseURL == "" {
-			baseURL = "https://api.github.com/repos/tsocial/digital_journey"
-		}
-		token := os.Getenv("GITHUB_TOKEN")
-		provider = config.NewRemoteConfigProvider(baseURL, token)
-		fmt.Printf("Using remote config provider: %s\n", baseURL)
-	} else {
-		// Use smart provider selection
-		provider = config.GetConfigProvider()
-		fmt.Printf("Using automatic config provider\n")
-	}
+	// Create config provider - always use local
+	provider := config.GetConfigProvider()
+	fmt.Printf("Using local config provider\n")
 
 	// Create analyzer service
 	analyzerService := analyzer.NewAnalyzerService(provider)
@@ -173,122 +149,8 @@ func runCompleteAnalysis(ctx context.Context, service *analyzer.AnalyzerService,
 	return nil
 }
 
-func listAvailableOptions(configPath string, remote bool) error {
-	fmt.Printf("🔍 Available Configuration Options\n")
-	fmt.Printf("==================================\n\n")
-
-	// Create config provider
-	var provider config.ConfigProvider
-	if remote {
-		baseURL := os.Getenv("CONFIG_REMOTE_URL")
-		if baseURL == "" {
-			baseURL = "https://api.github.com/repos/tsocial/digital_journey"
-		}
-		token := os.Getenv("GITHUB_TOKEN")
-		provider = config.NewRemoteConfigProvider(baseURL, token)
-		fmt.Printf("📡 Using remote config provider: %s\n", baseURL)
-	} else {
-		provider = config.GetConfigProvider()
-		fmt.Printf("📁 Using local config provider\n")
-	}
-
-	// Create context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	// Load all configs from the specified path
-	configs, err := provider.LoadConfigs(ctx, configPath)
-	if err != nil {
-		return fmt.Errorf("failed to load configs: %w", err)
-	}
-
-	fmt.Printf("📊 Found %d configurations in path: %s\n\n", len(configs), configPath)
-
-	// Collect unique lead sources and config IDs
-	leadSources := make(map[string]int)
-	configIDs := make(map[int]string)
-
-	for _, cfg := range configs {
-		// Collect config IDs
-		configIDs[cfg.ID] = cfg.Name
-
-		// Collect lead sources from tags
-		for _, tag := range cfg.Tags {
-			if tag.Name == "lead_source" {
-				leadSources[tag.Value]++
-			}
-		}
-	}
-
-	// Display lead sources
-	fmt.Printf("🎯 Available Lead Sources:\n")
-	fmt.Printf("-------------------------\n")
-	if len(leadSources) == 0 {
-		fmt.Printf("  No lead sources found in configurations\n")
-	} else {
-		for leadSource, count := range leadSources {
-			fmt.Printf("  • %s (%d configs)\n", leadSource, count)
-		}
-	}
-
-	fmt.Printf("\n🏢 Available Lender Config IDs:\n")
-	fmt.Printf("------------------------------\n")
-	if len(configIDs) == 0 {
-		fmt.Printf("  No configurations found\n")
-	} else {
-		// Sort config IDs for better display
-		var sortedIDs []int
-		for id := range configIDs {
-			sortedIDs = append(sortedIDs, id)
-		}
-		
-		// Simple sorting
-		for i := 0; i < len(sortedIDs)-1; i++ {
-			for j := i + 1; j < len(sortedIDs); j++ {
-				if sortedIDs[i] > sortedIDs[j] {
-					sortedIDs[i], sortedIDs[j] = sortedIDs[j], sortedIDs[i]
-				}
-			}
-		}
-
-		for _, id := range sortedIDs {
-			name := configIDs[id]
-			if len(name) > 50 {
-				name = name[:47] + "..."
-			}
-			fmt.Printf("  • %d - %s\n", id, name)
-		}
-	}
-
-	fmt.Printf("\n📝 Usage Examples:\n")
-	fmt.Printf("-----------------\n")
-	if len(configIDs) > 0 && len(leadSources) > 0 {
-		// Get first config ID and lead source for example
-		var exampleConfigID int
-		var exampleLeadSource string
-		
-		for id := range configIDs {
-			exampleConfigID = id
-			break
-		}
-		for leadSource := range leadSources {
-			exampleLeadSource = leadSource
-			break
-		}
-
-		fmt.Printf("  ./bin/ui-version-check -config %d -lead-source %s -config-path %s\n", 
-			exampleConfigID, exampleLeadSource, configPath)
-		if remote {
-			fmt.Printf("  ./bin/ui-version-check -config %d -lead-source %s -config-path %s -remote\n", 
-				exampleConfigID, exampleLeadSource, configPath)
-		}
-	}
-
-	return nil
-}
-
 func showHelp() {
-	fmt.Printf(`UI Version Check Tool - Enhanced Version
+	fmt.Printf(`UI Version Check Tool - Local Version
 
 USAGE:
     ui-version-check [OPTIONS]
@@ -299,8 +161,6 @@ OPTIONS:
     -config-path <path> Path to lender configs directory (default: "evo")
     -output <path>      Output directory for results (default: "../../out/test_results")
     -mode <mode>        Analysis mode: complete, ab-testing, journey (default: "complete")
-    -remote             Use remote GitHub API instead of local files
-    -list-options       List available lead sources and lender config IDs
     -help               Show this help message
 
 EXAMPLES:
@@ -310,18 +170,8 @@ EXAMPLES:
     # A/B testing analysis only
     ui-version-check -config 9054 -mode ab-testing
 
-    # Use remote GitHub API
-    ui-version-check -config 9054 -remote
-
-    # List available options
-    ui-version-check -list-options -config-path evo -remote
-
     # Custom paths
     ui-version-check -config 9054 -config-path win -output ./results
-
-ENVIRONMENT VARIABLES:
-    CONFIG_REMOTE_URL   GitHub API base URL (default: https://api.github.com/repos/tsocial/digital_journey)
-    GITHUB_TOKEN        GitHub token for API access (optional for public repos)
 
 MODES:
     complete    - Full analysis including A/B testing, journey mapping, and visualization
@@ -329,12 +179,10 @@ MODES:
     journey     - Journey flow analysis and visualization only
 
 FEATURES:
-    ✅ Smart config provider selection (local/remote)
-    ✅ No dependency on submodules or auto_sync
-    ✅ GitHub API integration for remote configs
-    ✅ Environment-based configuration
+    ✅ Local file-based configuration loading
+    ✅ Vendor directory support
     ✅ Optimized service architecture
-    ✅ List available configuration options
+    ✅ No external dependencies
 
 OUTPUT:
     The tool generates JSON data files, PlantUML diagrams, PNG images, and summary reports
