@@ -73,7 +73,7 @@ jobs:
     
     - name: Setup Repository Dependencies
       env:
-        GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TS_TOKEN_TEST || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
         echo "🔄 Setting up repository dependencies..."
         
