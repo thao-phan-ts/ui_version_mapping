@@ -9,9 +9,7 @@ on:
         type: choice
         options:
           - organic
-          - paid
-          - referral
-          - direct
+          - evo_native
         default: 'organic'
       
       config_path:

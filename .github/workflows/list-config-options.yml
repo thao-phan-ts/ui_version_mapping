@@ -23,7 +23,7 @@ on:
 jobs:
   list-options:
     runs-on: ubuntu-latest
-    environment: production
+    environment: production  # Change this to match your environment name
     
     steps:
     - name: Checkout repository
@@ -62,7 +62,7 @@ jobs:
         
         ./bin/ui-version-check -list-options -config-path ${{ github.event.inputs.config_path }} -remote=${{ github.event.inputs.use_remote }}
       env:
-        GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
     
     - name: Generate Options Summary
