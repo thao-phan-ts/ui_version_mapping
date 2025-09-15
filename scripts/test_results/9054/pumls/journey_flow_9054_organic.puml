@@ -1,0 +1,73 @@
+@startuml
+!$THEME = "materia"
+
+!if %not(%variable_exists("$BGCOLOR"))
+!$BGCOLOR = "$WHITE"
+!endif
+
+skinparam backgroundColor $BGCOLOR
+skinparam useBetaStyle false
+
+!$PRIMARY = "#2196F3"
+!$SUCCESS = "#4CAF50"
+!$WARNING = "#ff9800"
+!$DANGER = "#e51c23"
+!$INFO = "#9C27B0"
+!$WHITE = "#FFF"
+!$DARK = "#222"
+
+skinparam rectangle {
+  BackgroundColor $PRIMARY
+  BorderColor $PRIMARY
+  FontColor $WHITE
+  BorderThickness 2
+}
+
+skinparam arrow {
+  Color $DARK
+  FontColor $DARK
+  Thickness 2
+}
+
+title Journey Flow Analysis - Config 9054
+
+rectangle "Config 9054\n(Source)" as config_9054 $PRIMARY
+rectangle "Config 9012\nDifferent information flow" as config_9012 $SUCCESS
+rectangle "Config 9013\nDifferent information flow" as config_9013 $SUCCESS
+rectangle "Config 9014\nCIF verification flow" as config_9014 $PRIMARY
+rectangle "Config 9018\nDifferent information flow" as config_9018 $SUCCESS
+rectangle "Config 9028\nCIF verification flow" as config_9028 $PRIMARY
+rectangle "Config 9048\nRejection flow" as config_9048 $DANGER
+rectangle "Config 9064\nRejection flow" as config_9064 $DANGER
+rectangle "Config 9086\nCIF verification flow" as config_9086 $PRIMARY
+rectangle "Config 9088\nCIF verification flow" as config_9088 $PRIMARY
+rectangle "Config 9095\nAutomated flow" as config_9095 $WARNING
+rectangle "Config 9096\nAutomated flow" as config_9096 $WARNING
+rectangle "Config 9097\nSemi-automated flow" as config_9097 $INFO
+rectangle "Config 9020\nNormal flow" as config_9020 $SUCCESS
+
+config_9054 --> config_9012 : normal_to_diff_nation_id
+config_9054 --> config_9013 : normal_to_diff_phone
+config_9054 --> config_9014 : normal_to_diff_cif
+config_9054 --> config_9018 : normal_to_diff_info
+config_9054 --> config_9028 : normal_to_cif_reopen
+config_9054 --> config_9048 : normal_to_rejection
+config_9054 --> config_9064 : normal_to_rejection
+config_9054 --> config_9086 : normal_to_cif_pending
+config_9054 --> config_9088 : normal_to_cif_no_branch
+config_9054 --> config_9095 : normal_to_auto_pcb
+config_9054 --> config_9096 : normal_to_auto_cic
+config_9054 --> config_9097 : normal_to_semi
+config_9054 --> config_9020 : normal
+
+legend right
+  |Color|Flow Type|
+  |<#lightblue>|Source Config|
+  |<#lightgreen>|Normal Flow|
+  |<#lightyellow>|Automated Flow|
+  |<#lightpink>|Semi-Automated Flow|
+  |<#lightcyan>|CIF Verification|
+  |<#lightcoral>|Rejection Flow|
+endlegend
+
+@enduml

@@ -1,0 +1,9 @@
+@startuml
+title A/B Testing Groups Analysis
+
+package "Group 1: v1.0.collect.organic" {
+  rectangle "Config 9054\nWeight: 1 (50.0%)" as config_0_0
+  rectangle "Config 9101\nWeight: 1 (50.0%)" as config_0_1
+}
+
+@enduml

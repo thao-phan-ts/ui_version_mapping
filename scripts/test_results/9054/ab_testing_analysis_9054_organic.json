@@ -1,0 +1,389 @@
+{
+  "search_id": 9054,
+  "search_type": "ab_testing_analysis",
+  "ab_testing_groups": [
+    {
+      "group_name": "v1.0.collect.organic",
+      "variants": [
+        {
+          "config_id": 9054,
+          "name": "v1.0.collect.organic",
+          "weight": 1,
+          "ui_flow": [
+            "otp",
+            "app_form.basic_info",
+            "appraising.quick_approval",
+            "app_form.personal_info",
+            "ekyc.selfie.active",
+            "appraising.second_approval",
+            "ekyc.id_card",
+            "ekyc.confirm",
+            "appraising.third_approval",
+            "appraising.fourth_approval"
+          ],
+          "differences": [
+            "Original variant"
+          ]
+        },
+        {
+          "config_id": 9101,
+          "name": "v1.0.collect.organic",
+          "weight": 1,
+          "ui_flow": [
+            "otp",
+            "app_form.basic_info",
+            "appraising.quick_approval",
+            "app_form.personal_info",
+            "ekyc.selfie.flash",
+            "appraising.second_approval",
+            "ekyc.id_card",
+            "ekyc.confirm",
+            "appraising.third_approval",
+            "appraising.fourth_approval"
+          ],
+          "differences": [
+            "Step 5: ekyc.selfie.active vs ekyc.selfie.flash"
+          ]
+        }
+      ],
+      "total_weight": 2
+    }
+  ],
+  "normal_results": [
+    {
+      "config_id": 9012,
+      "name": "v1.0.diff_nation_id",
+      "flow_type": "diff_nation_id",
+      "ui_version": "v9.1.1.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: diff_nation_id",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "diff_nation_id"
+        }
+      ]
+    },
+    {
+      "config_id": 9013,
+      "name": "v1.0.diff_phone",
+      "flow_type": "diff_phone",
+      "ui_version": "v9.1.2.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: diff_phone",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "diff_phone"
+        }
+      ]
+    },
+    {
+      "config_id": 9014,
+      "name": "v1.0.diff_cif",
+      "flow_type": "diff_cif",
+      "ui_version": "v9.1.3.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: diff_cif",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "diff_cif"
+        }
+      ]
+    },
+    {
+      "config_id": 9018,
+      "name": "v1.0.diff_info",
+      "flow_type": "diff_info",
+      "ui_version": "v9.1.4.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: diff_info",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "diff_info"
+        }
+      ]
+    },
+    {
+      "config_id": 9028,
+      "name": "v1.0.cif_reopen",
+      "flow_type": "cif_reopen",
+      "ui_version": "v9.1.6.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: cif_reopen",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "cif_reopen"
+        }
+      ]
+    },
+    {
+      "config_id": 9048,
+      "name": "v1.0.rejection",
+      "flow_type": "rejection",
+      "ui_version": "v1.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: rejection",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "rejection"
+        }
+      ]
+    },
+    {
+      "config_id": 9064,
+      "name": "v1.0.rejection",
+      "flow_type": "rejection",
+      "ui_version": "v1.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: rejection",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "rejection"
+        }
+      ]
+    },
+    {
+      "config_id": 9086,
+      "name": "v1.0.cif_pending",
+      "flow_type": "cif_pending",
+      "ui_version": "v9.1.7.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: cif_pending",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "cif_pending"
+        }
+      ]
+    },
+    {
+      "config_id": 9088,
+      "name": "v1.0.cif_no_branch",
+      "flow_type": "cif_no_branch",
+      "ui_version": "v9.1.8.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: cif_no_branch",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "cif_no_branch"
+        }
+      ]
+    },
+    {
+      "config_id": 9095,
+      "name": "v1.0.collect.auto_pcb",
+      "flow_type": "auto_pcb",
+      "ui_version": "v9.1.5.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: auto_pcb",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "auto_pcb"
+        }
+      ]
+    },
+    {
+      "config_id": 9096,
+      "name": "v1.0.collect.auto_cic",
+      "flow_type": "auto_cic",
+      "ui_version": "v1.0-auto",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: auto_cic",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "auto_cic"
+        }
+      ]
+    },
+    {
+      "config_id": 9097,
+      "name": "v1.0.collect.semi",
+      "flow_type": "semi",
+      "ui_version": "v1.0-semi",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, shared telco_code: vinaphone, different flow_type: semi",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "telco_code",
+          "value": "vinaphone"
+        },
+        {
+          "name": "flow_type",
+          "value": "semi"
+        }
+      ]
+    },
+    {
+      "config_id": 9020,
+      "name": "v1.0.other",
+      "flow_type": "normal",
+      "ui_version": "v1.0",
+      "weight": 1,
+      "match_reason": "same product_code, same lead_source, same flow_type",
+      "matched_tags": [
+        {
+          "name": "product_code",
+          "value": "tpb_01"
+        },
+        {
+          "name": "lead_source",
+          "value": "organic"
+        },
+        {
+          "name": "flow_type",
+          "value": "normal"
+        }
+      ]
+    }
+  ],
+  "total_results": 14
+}

@@ -1,0 +1,59 @@
+@startuml
+!$THEME = "materia"
+
+!if %not(%variable_exists("$BGCOLOR"))
+!$BGCOLOR = "transparent"
+!endif
+
+skinparam backgroundColor $BGCOLOR
+skinparam useBetaStyle false
+
+!$BLUE = "#2196F3"
+!$GREEN = "#4CAF50"
+!$ORANGE = "#fd7e14"
+!$RED = "#e51c23"
+!$PRIMARY = "#2196F3"
+!$SUCCESS = "#4CAF50"
+!$WARNING = "#ff9800"
+!$DANGER = "#e51c23"
+!$WHITE = "#FFF"
+!$DARK = "#222"
+
+skinparam activity {
+  BackgroundColor $PRIMARY
+  BorderColor $BLUE
+  FontColor $WHITE
+  StartColor $SUCCESS
+  EndColor $DANGER
+  DiamondBackgroundColor $WARNING
+  DiamondBorderColor $ORANGE
+  DiamondFontColor $DARK
+}
+
+skinparam arrow {
+  Color $PRIMARY
+  FontColor $DARK
+  Thickness 2
+}
+
+title Journey Steps - from_9054_to_9028 - CIF verification flow
+
+start
+:Step 0: cif.confirm\nUI Version: v9.1.6.0;
+
+:Step 1: appraising.cif\nUI Version: v9.1.6.0;
+
+stop
+
+note right
+Journey Information:
+Flow Type: normal_to_cif_reopen
+From Config: 9054
+To Config: 9028
+Condition: flow_routing_condition == true
+\nUI Version Legend:\n- Main UI: Primary version
+- Sub UI: Secondary version
+- Conditional: Dynamic based on conditions
+end note
+
+@enduml
