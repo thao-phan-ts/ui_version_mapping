@@ -7,17 +7,13 @@ set -euo pipefail  # Exit on error, undefined variables, and pipe failures
 # ============================================================================
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR="${SCRIPT_DIR}/submodules"
-readonly DE_BASE_DIR="de_base"
 readonly GITHUB_ORG="tsocial"
 
 # Repository configurations - parallel arrays
 REPOS=("digital_journey" "decision_engine")
 CHECKOUT_DIRS=("migration" "etc/production migration")
 
-# Decision Engine base configuration
-readonly DE_REPO="decision_engine"
-readonly DE_BASE_TAG="v1.196.0"
-readonly DE_BASE_COMMIT="d623cc45cb3e7201fa0946342cbc5d046ddd8d38"
+
 
 # Color codes for output
 readonly RED='\033[0;31m'
@@ -142,12 +138,6 @@ update_repositories() {
         
         print_separator
         
-        # Skip the base directory
-        if [[ "$dir_name" == "$DE_BASE_DIR" ]]; then
-            log_warn "Skipping $DE_BASE_DIR (managed separately)"
-            continue
-        fi
-        
         if is_git_repo "$dir"; then
             log_info "Updating: $dir_name"
             cd "$dir"
@@ -168,56 +158,6 @@ update_repositories() {
     log_info "✓ Repository updates complete"
 }
 
-# Setup Decision Engine base repository with specific commit
-setup_de_base() {
-    print_separator
-    log_info "Setting up Decision Engine base repository..."
-    
-    ensure_directory "$ROOT_DIR"
-    cd "$ROOT_DIR"
-    
-    local de_base_path="${ROOT_DIR}/${DE_BASE_DIR}"
-    
-    if [ ! -d "$DE_BASE_DIR" ]; then
-        log_info "Initializing DE base repository with commit: $DE_BASE_COMMIT"
-        
-        # Clone with sparse checkout
-        git clone \
-            --filter=blob:none \
-            --no-checkout \
-            --sparse \
-            "git@github.com:${GITHUB_ORG}/${DE_REPO}.git" \
-            "$DE_BASE_DIR"
-        
-        cd "$DE_BASE_DIR"
-        
-        # Configure sparse checkout
-        git config core.sparseCheckout true
-        git sparse-checkout add "etc/production" "migration"
-        
-        # Checkout specific commit
-        log_info "Checking out base commit: $DE_BASE_COMMIT (tag: $DE_BASE_TAG)"
-        git checkout "$DE_BASE_COMMIT"
-    else
-        log_info "DE base directory exists, updating..."
-        cd "$DE_BASE_DIR"
-        
-        # Fetch latest changes
-        git fetch origin master
-        
-        # Ensure we're on the correct commit
-        local current_commit=$(git rev-parse HEAD)
-        if [ "$current_commit" != "$DE_BASE_COMMIT" ]; then
-            log_warn "Current commit differs from base, resetting to: $DE_BASE_COMMIT"
-            git checkout "$DE_BASE_COMMIT"
-        else
-            log_info "Already on correct base commit"
-        fi
-    fi
-    
-    cd "$SCRIPT_DIR"
-    log_info "✓ Decision Engine base setup complete"
-}
 
 # Display usage information
 show_usage() {
@@ -242,7 +182,7 @@ EOF
 
 CONFIGURATION:
     Root Directory: $ROOT_DIR
-    DE Base Commit: $DE_BASE_COMMIT (tag: $DE_BASE_TAG)
+    GitHub Organization: $GITHUB_ORG
     
 EOF
 }
@@ -255,7 +195,6 @@ main() {
     case "${1:-}" in
         1)
             init_repositories
-            setup_de_base
             ;;
         -h|--help)
             show_usage
@@ -263,7 +202,6 @@ main() {
             ;;
         "")
             update_repositories
-            setup_de_base
             ;;
         *)
             log_error "Invalid argument: $1"
