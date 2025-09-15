@@ -1,0 +1,83 @@
+name: Debug Repository Access
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment_name:
+        description: 'GitHub Environment (where TS_TOKEN is configured)'
+        required: false
+        type: string
+        default: 'production'
+
+jobs:
+  debug-access:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment_name }}
+    
+    steps:
+    - name: Test Repository Access
+      run: |
+        echo "🔍 Testing Repository Access"
+        echo "============================"
+        echo "Environment: ${{ github.event.inputs.environment_name }}"
+        echo ""
+        
+        # Check token availability
+        echo "Token Status:"
+        echo "- TS_TOKEN: $([ -n '${{ secrets.TS_TOKEN }}' ] && echo 'AVAILABLE' || echo 'NOT SET')"
+        echo "- TSOCIAL_ACCESS_TOKEN: $([ -n '${{ secrets.TSOCIAL_ACCESS_TOKEN }}' ] && echo 'AVAILABLE' || echo 'NOT SET')"
+        echo "- GITHUB_TOKEN: $([ -n '${{ secrets.GITHUB_TOKEN }}' ] && echo 'AVAILABLE' || echo 'NOT SET')"
+        echo ""
+        
+        # Test repository access with different URLs
+        echo "Testing Repository URLs:"
+        echo "========================"
+        
+        REPOS=(
+          "tsocial/digital_journey"
+          "tsocial/digital-journey"
+          "thao-phan-ts/digital_journey"
+          "thao-phan-ts/digital-journey"
+        )
+        
+        for repo in "${REPOS[@]}"; do
+          echo "Testing: https://api.github.com/repos/$repo"
+          
+          response=$(curl -s -w "%{http_code}" -o /tmp/response.json \
+            -H "Authorization: token ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$repo")
+          
+          if [ "$response" = "200" ]; then
+            echo "✅ SUCCESS - Repository accessible"
+            echo "Repository info:"
+            cat /tmp/response.json | jq -r '.name, .full_name, .private, .clone_url' 2>/dev/null || cat /tmp/response.json | head -3
+          elif [ "$response" = "404" ]; then
+            echo "❌ NOT FOUND - Repository doesn't exist or no access"
+          elif [ "$response" = "401" ]; then
+            echo "🔐 UNAUTHORIZED - Token doesn't have access"
+          else
+            echo "⚠️  HTTP $response - Unexpected response"
+          fi
+          echo ""
+        done
+        
+        # Test specific path that the tool uses
+        echo "Testing Specific Path:"
+        echo "====================="
+        test_url="https://api.github.com/repos/tsocial/digital_journey/contents/migration/sync/vietnam/tpbank/lender_configs/evo"
+        echo "Testing: $test_url"
+        
+        response=$(curl -s -w "%{http_code}" -o /tmp/path_response.json \
+          -H "Authorization: token ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          "$test_url")
+        
+        if [ "$response" = "200" ]; then
+          echo "✅ SUCCESS - Path accessible"
+          echo "Found $(cat /tmp/path_response.json | jq length 2>/dev/null || echo 'unknown number of') items"
+        else
+          echo "❌ HTTP $response - Path not accessible"
+          echo "Response preview:"
+          head -3 /tmp/path_response.json 2>/dev/null || echo "No response content"
+        fi 

@@ -46,10 +46,17 @@ on:
         required: false
         type: boolean
         default: true
+      
+      environment_name:
+        description: 'GitHub Environment (where TS_TOKEN is configured)'
+        required: false
+        type: string
+        default: 'production'
 
 jobs:
   ui-version-check:
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment_name }}  # Configurable environment for TS_TOKEN access
     
     steps:
     - name: Checkout repository
@@ -83,6 +90,30 @@ jobs:
       run: |
         make build
         chmod +x bin/ui-version-check
+    
+    - name: Debug Token Configuration
+      run: |
+        echo "🔍 Debugging Token Configuration..."
+        echo "=================================="
+        echo "Available tokens:"
+        echo "- TS_TOKEN: $([ -n '${{ secrets.TS_TOKEN }}' ] && echo 'CONFIGURED' || echo 'NOT SET')"
+        echo "- TSOCIAL_ACCESS_TOKEN: $([ -n '${{ secrets.TSOCIAL_ACCESS_TOKEN }}' ] && echo 'CONFIGURED' || echo 'NOT SET')"
+        echo "- GITHUB_TOKEN: $([ -n '${{ secrets.GITHUB_TOKEN }}' ] && echo 'CONFIGURED' || echo 'NOT SET')"
+        echo ""
+        echo "Testing repository access..."
+        
+        # Test different repository URLs
+        for repo_url in \
+          "https://api.github.com/repos/tsocial/digital_journey" \
+          "https://api.github.com/repos/tsocial/digital-journey" \
+          "https://api.github.com/repos/thao-phan-ts/digital_journey"; do
+          
+          echo "Testing: $repo_url"
+          curl -s -H "Authorization: token ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               "$repo_url" | head -5 || echo "Failed to access $repo_url"
+          echo ""
+        done
     
     - name: List Available Options (for reference)
       run: |
