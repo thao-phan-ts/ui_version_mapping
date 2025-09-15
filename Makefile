@@ -63,19 +63,8 @@ install-deps:
 # Setup development environment
 setup:
 	@echo "Setting up development environment..."
-	@./scripts/setup.sh auto
-
-setup-local:
-	@echo "Setting up local development..."
-	@./scripts/setup.sh local
-
-setup-remote:
-	@echo "Setting up remote development..."
-	@./scripts/setup.sh remote
-
-setup-clean:
-	@echo "Cleaning up old setup..."
-	@./scripts/setup.sh clean
+	@echo "✅ Using vendor configs - no additional setup needed"
+	@echo "Run 'make build' to build the tool"
 
 # Run the tool with default parameters
 run: build

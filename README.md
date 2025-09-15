@@ -96,13 +96,7 @@ make test-ab
 make test-journey
 ```
 
-### 5. Demo Script
-```bash
-# Run comprehensive demo
-./demo.sh
 
-# Shows both local and remote functionality
-```
 
 ### 3. Check Generated Results
 ```bash
