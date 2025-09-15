@@ -90,11 +90,11 @@ jobs:
         echo "=================================="
         ./bin/ui-version-check -list-options -config-path ${{ github.event.inputs.config_path }} -remote=${{ github.event.inputs.use_remote }} || {
           echo "⚠️  Remote access failed, this might be due to repository permissions."
-          echo "💡 To fix this, add a TSOCIAL_ACCESS_TOKEN secret with access to the tsocial organization."
+          echo "💡 To fix this, add a TS_TOKEN secret with access to the tsocial organization."
           echo "📖 See workflow documentation for setup instructions."
         }
       env:
-        GITHUB_TOKEN: ${{ secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
     
     - name: Validate Configuration
@@ -126,7 +126,7 @@ jobs:
         echo "✅ Configuration validation passed!"
         rm -rf ./test_output
       env:
-        GITHUB_TOKEN: ${{ secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
     
     - name: Run UI Version Analysis
@@ -185,7 +185,7 @@ jobs:
           echo "✅ Analysis completed successfully!"
         fi
       env:
-        GITHUB_TOKEN: ${{ secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.TS_TOKEN || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
     
     - name: Upload Analysis Results

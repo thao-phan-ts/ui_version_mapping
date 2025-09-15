@@ -88,7 +88,8 @@ This directory contains GitHub Action workflows that allow you to run the UI Ver
 The workflows use these environment variables:
 
 - `GITHUB_TOKEN`: Automatically provided by GitHub Actions for API access
-- `TSOCIAL_ACCESS_TOKEN`: (Optional) Personal access token with access to tsocial organization
+- `TS_TOKEN`: (Recommended) Personal access token with access to tsocial organization
+- `TSOCIAL_ACCESS_TOKEN`: (Alternative) Personal access token with access to tsocial organization
 - `CONFIG_REMOTE_URL`: Set to `https://api.github.com/repos/tsocial/digital_journey`
 
 ### Setting Up Access to Private Repositories
@@ -103,12 +104,17 @@ If the `tsocial/digital_journey` repository is private, you'll need to add a per
 2. **Add the Token as a Repository Secret**:
    - Go to your repository Settings → Secrets and variables → Actions
    - Click "New repository secret"
-   - Name: `TSOCIAL_ACCESS_TOKEN`
+   - Name: `TS_TOKEN` (recommended) or `TSOCIAL_ACCESS_TOKEN`
    - Value: Your personal access token
 
 3. **Alternative: Use a Public Repository**:
    - Fork `tsocial/digital_journey` to your personal account
    - Update `CONFIG_REMOTE_URL` in the workflows to point to your fork
+
+4. **Using Environment Protection Rules** (Advanced):
+   - Create a GitHub environment (e.g., "production") with protection rules
+   - Add `TS_TOKEN` as an environment secret instead of repository secret
+   - Update workflows to specify the environment for enhanced security
 
 ### Permissions
 
@@ -152,7 +158,7 @@ results/
 
 1. **"GitHub API returned status 404"**:
    - The `tsocial/digital_journey` repository is private or doesn't exist
-   - Add a `TSOCIAL_ACCESS_TOKEN` secret (see setup instructions above)
+   - Add a `TS_TOKEN` secret (see setup instructions above)
    - Or fork the repository to your account and update `CONFIG_REMOTE_URL`
    - Verify the repository path is correct
 
