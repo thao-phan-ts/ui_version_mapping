@@ -61,13 +61,13 @@ jobs:
         go-version: '1.21'
     
     - name: Set up Java (for PlantUML)
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '11'
     
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
@@ -116,7 +116,7 @@ jobs:
         CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
     
     - name: Upload Analysis Results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: ui-version-analysis-results-${{ github.event.inputs.lender_config_id }}-${{ github.event.inputs.lead_source }}
@@ -162,7 +162,7 @@ jobs:
 
     - name: Comment on PR (if applicable)
       if: github.event_name == 'pull_request' && always()
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           const fs = require('fs');
