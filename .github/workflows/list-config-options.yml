@@ -1,0 +1,104 @@
+name: List Configuration Options
+
+on:
+  workflow_dispatch:
+    inputs:
+      config_path:
+        description: 'Config Path to scan'
+        required: true
+        type: choice
+        options:
+          - evo
+          - win
+          - evo_native
+          - winback
+        default: 'evo'
+      
+      use_remote:
+        description: 'Use Remote GitHub API'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  list-options:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.25'
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Download dependencies
+      run: go mod download
+    
+    - name: Build UI Version Check Tool
+      run: |
+        make build
+        chmod +x bin/ui-version-check
+    
+    - name: List Available Configuration Options
+      run: |
+        echo "🔍 Scanning Configuration Options..."
+        echo "===================================="
+        echo "Config Path: ${{ github.event.inputs.config_path }}"
+        echo "Use Remote: ${{ github.event.inputs.use_remote }}"
+        echo ""
+        
+        ./bin/ui-version-check -list-options -config-path ${{ github.event.inputs.config_path }} -remote=${{ github.event.inputs.use_remote }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
+    
+    - name: Generate Options Summary
+      run: |
+        echo "📋 Configuration Options Summary" > options_summary.md
+        echo "===============================" >> options_summary.md
+        echo "" >> options_summary.md
+        echo "**Config Path:** ${{ github.event.inputs.config_path }}" >> options_summary.md
+        echo "**Source:** $([ '${{ github.event.inputs.use_remote }}' = 'true' ] && echo 'Remote GitHub API' || echo 'Local Files')" >> options_summary.md
+        echo "**Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> options_summary.md
+        echo "" >> options_summary.md
+        
+        # Capture the options output
+        ./bin/ui-version-check -list-options -config-path ${{ github.event.inputs.config_path }} -remote=${{ github.event.inputs.use_remote }} >> options_summary.md 2>&1 || true
+        
+        echo "" >> options_summary.md
+        echo "---" >> options_summary.md
+        echo "" >> options_summary.md
+        echo "💡 **How to use these options:**" >> options_summary.md
+        echo "" >> options_summary.md
+        echo "1. Go to the [UI Version Check workflow](../../actions/workflows/ui-version-check.yml)" >> options_summary.md
+        echo "2. Click 'Run workflow'" >> options_summary.md
+        echo "3. Select your desired Lead Source and enter a Lender Config ID from the list above" >> options_summary.md
+        echo "4. Choose your analysis mode and run the workflow" >> options_summary.md
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CONFIG_REMOTE_URL: https://api.github.com/repos/tsocial/digital_journey
+    
+    - name: Upload Options Summary
+      uses: actions/upload-artifact@v3
+      with:
+        name: config-options-${{ github.event.inputs.config_path }}-$(date +%Y%m%d)
+        path: options_summary.md
+        retention-days: 7
+    
+    - name: Display Summary
+      run: |
+        echo "📋 Configuration Options Summary Generated"
+        echo "========================================="
+        cat options_summary.md 

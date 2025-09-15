@@ -30,6 +30,24 @@ java -version
 
 ## 🚀 Quick Start
 
+### Option 1: GitHub Actions (Recommended for Users)
+
+**No local setup required!** Use the GitHub Actions workflows directly from your browser:
+
+1. **Discover Available Options**:
+   - Go to [Actions](../../actions) → "List Configuration Options"
+   - Click "Run workflow" and select a config path
+   - Review available lead sources and lender config IDs
+
+2. **Run Analysis**:
+   - Go to [Actions](../../actions) → "UI Version Check Tool"
+   - Click "Run workflow" and fill in the parameters
+   - Download the results from the workflow artifacts
+
+📖 **[See detailed GitHub Actions guide](.github/workflows/README.md)**
+
+### Option 2: Local Development
+
 ### 1. Build the Tool
 ```bash
 # Build using Make
