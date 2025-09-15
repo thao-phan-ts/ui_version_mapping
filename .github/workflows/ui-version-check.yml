@@ -73,7 +73,9 @@ jobs:
     
     - name: Setup Repository Dependencies
       env:
-        GITHUB_TOKEN: ${{ secrets.TS_TOKEN_TEST || secrets.TSOCIAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TS_TOKEN_TEST: ${{ secrets.TS_TOKEN_TEST }}
+        TSOCIAL_ACCESS_TOKEN: ${{ secrets.TSOCIAL_ACCESS_TOKEN }}
       run: |
         echo "🔄 Setting up repository dependencies..."
         
@@ -93,9 +95,21 @@ jobs:
           
           # Show token status (masked)
           if [ -n "${GITHUB_TOKEN:-}" ]; then
-            echo "  • GitHub Token: Available (${#GITHUB_TOKEN} chars)"
+            echo "  • GITHUB_TOKEN: Available (${#GITHUB_TOKEN} chars)"
           else
-            echo "  • GitHub Token: Not available"
+            echo "  • GITHUB_TOKEN: Not available"
+          fi
+          
+          if [ -n "${TS_TOKEN_TEST:-}" ]; then
+            echo "  • TS_TOKEN_TEST: Available (${#TS_TOKEN_TEST} chars)"
+          else
+            echo "  • TS_TOKEN_TEST: Not available"
+          fi
+          
+          if [ -n "${TSOCIAL_ACCESS_TOKEN:-}" ]; then
+            echo "  • TSOCIAL_ACCESS_TOKEN: Available (${#TSOCIAL_ACCESS_TOKEN} chars)"
+          else
+            echo "  • TSOCIAL_ACCESS_TOKEN: Not available"
           fi
           
           # Run auto_sync.sh with initialization

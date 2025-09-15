@@ -98,9 +98,19 @@ sparse_checkout_repo() {
     # Determine repository URL based on environment
     local repo_url
     if [ -n "${GITHUB_TOKEN:-}" ]; then
+        # Check if we should use a different token for tsocial org
+        local auth_token="${GITHUB_TOKEN}"
+        if [ -n "${TS_TOKEN_TEST:-}" ] && [ "${GITHUB_ORG}" = "tsocial" ]; then
+            auth_token="${TS_TOKEN_TEST}"
+            log_info "Using TS_TOKEN_TEST for tsocial organization"
+        elif [ -n "${TSOCIAL_ACCESS_TOKEN:-}" ] && [ "${GITHUB_ORG}" = "tsocial" ]; then
+            auth_token="${TSOCIAL_ACCESS_TOKEN}"
+            log_info "Using TSOCIAL_ACCESS_TOKEN for tsocial organization"
+        fi
+        
         # Directly use authenticated URL in CI with token
-        repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_ORG}/${repo_name}.git"
-        log_info "Using authenticated HTTPS URL"
+        repo_url="https://x-access-token:${auth_token}@github.com/${GITHUB_ORG}/${repo_name}.git"
+        log_info "Using authenticated HTTPS URL (token length: ${#auth_token})"
     elif [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
         # CI without token, try public access
         repo_url="https://github.com/${GITHUB_ORG}/${repo_name}.git"
@@ -119,15 +129,29 @@ sparse_checkout_repo() {
     export GIT_ASKPASS=/bin/echo
     
     # Clone and suppress token in output
-    git clone \
+    if ! git clone \
         --filter=blob:none \
         --no-checkout \
         --sparse \
         "$repo_url" \
-        "$target_dir" 2>&1 | sed 's/x-access-token:[^@]*@/x-access-token:***@/g' || {
+        "$target_dir" 2>&1 | sed 's/x-access-token:[^@]*@/x-access-token:***@/g'; then
+        
         log_error "Failed to clone ${repo_name}"
+        log_warn "Possible causes:"
+        log_warn "  1. Token doesn't have access to ${GITHUB_ORG}/${repo_name}"
+        log_warn "  2. Repository is private and token lacks 'repo' scope"
+        log_warn "  3. Token has expired or been revoked"
+        log_warn "  4. Repository doesn't exist or has been renamed"
+        
+        if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+            log_warn "For GitHub Actions, ensure:"
+            log_warn "  - TS_TOKEN_TEST or TSOCIAL_ACCESS_TOKEN is set in repository secrets"
+            log_warn "  - Token has access to the tsocial organization"
+            log_warn "  - Token has 'repo' scope for private repositories"
+        fi
+        
         return 1
-    }
+    fi
     
     cd "$target_dir"
     
